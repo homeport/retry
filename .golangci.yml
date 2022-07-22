@@ -1,0 +1,8 @@
+---
+linters:
+  enable:
+    - gosec
+    - revive
+    - misspell
+  disable:
+    - structcheck

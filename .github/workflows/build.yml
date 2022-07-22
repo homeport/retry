@@ -1,0 +1,56 @@
+---
+name: Build
+
+on:
+  push:
+    tags-ignore:
+    - '**'
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18.x
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        # Optional: show only new issues if it's a pull request. The default value is `false`.
+        only-new-issues: true
+
+    - name: Install Ginkgo (v2)
+      run: go install github.com/onsi/ginkgo/v2/ginkgo@latest
+
+    - name: Run Unit Tests
+      run: |
+        ginkgo run \
+          --coverprofile=unit.coverprofile \
+          --randomize-all \
+          --randomize-suites \
+          --fail-on-pending \
+          --keep-going \
+          --slow-spec-threshold=4m \
+          --compilers=2 \
+          --race \
+          --trace \
+          ./...
+
+    - name: Upload Code Coverage Profile
+      uses: codecov/codecov-action@v1
+      with:
+        files: ./*.coverprofile
+        flags: unittests
+        fail_ci_if_error: true
+        verbose: false

@@ -1,0 +1,11 @@
+  Run curl command with default settings ({{ .Attempts }} attempts with an initial delay of {{ .Delay }}):
+  $ {{ .Name }} -- curl wttr.in
+
+  Specify the number of attempts (retries):
+  $ {{ .Name }} --attempts 5 -- some-command --flag
+
+  Use a custom initial delay:
+  $ {{ .Name }} --delay 100ms -- some-command
+
+  Please note: {{ .Name }} uses back-off style delay, this means that the
+               delay is slighly increased with each attempt.
