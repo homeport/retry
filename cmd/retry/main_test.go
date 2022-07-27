@@ -18,10 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cmd_test
+package main_test
 
 import (
 	"bytes"
+	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,10 +31,10 @@ import (
 
 var _ = Describe("Retry tool", func() {
 	Context("use cases", func() {
-		It("should just show the usage when used without arguments", func() {
+		It("should fail if no command is provided", func() {
 			Expect(that(
 				retry(),
-			)).To(Succeed())
+			)).ToNot(Succeed())
 		})
 
 		It("should succeed if command returns zero exit code", func() {
@@ -44,6 +46,12 @@ var _ = Describe("Retry tool", func() {
 		It("should print the version info", func() {
 			Expect(that(
 				retry("--version"),
+			)).To(BeNil())
+		})
+
+		It("should ignore unknown flags that are probably flags for the command to be retried", func() {
+			Expect(that(
+				retry("true", "--flag"),
 			)).To(BeNil())
 		})
 
@@ -61,6 +69,23 @@ var _ = Describe("Retry tool", func() {
 				withOutput(&buf),
 			)).ToNot(BeNil())
 			Expect(buf.Len()).To(BeZero())
+		})
+
+		It("should cancel the execution if the context is canceled", func() {
+			ctx, cancel := context.WithCancel(context.Background())
+			start := time.Now()
+
+			go func() {
+				time.Sleep(time.Second)
+				cancel()
+			}()
+
+			Expect(that(
+				withContext(ctx),
+				retry("sleep", "60"),
+			)).ToNot(Succeed())
+
+			Expect(time.Now()).Should(BeTemporally("<", start.Add(60*time.Second)))
 		})
 	})
 })

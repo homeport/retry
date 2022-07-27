@@ -12,7 +12,7 @@ builds:
     flags:
     - -trimpath
     ldflags:
-    - -s -w -extldflags "-static" -X github.com/homeport/retry/internal/cmd.version={{.Version}}
+    - -s -w -extldflags "-static" -X main.version={{.Version}}
     mod_timestamp: '{{ .CommitTimestamp }}'
 
 archives:
