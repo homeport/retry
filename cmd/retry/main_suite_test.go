@@ -18,9 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cmd_test
+package main_test
 
 import (
+	"context"
 	"io"
 	"os"
 	"testing"
@@ -28,7 +29,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/homeport/retry/internal/cmd"
+	. "github.com/homeport/retry/cmd/retry"
 )
 
 func TestRetry(t *testing.T) {
@@ -37,6 +38,7 @@ func TestRetry(t *testing.T) {
 }
 
 type settings struct {
+	ctx    context.Context
 	output io.Writer
 	args   []string
 }
@@ -55,6 +57,12 @@ func withOutput(w io.Writer) testOption {
 	}
 }
 
+func withContext(ctx context.Context) testOption {
+	return func(s *settings) {
+		s.ctx = ctx
+	}
+}
+
 func that(options ...testOption) error {
 	stdin, stdout, stderr, args := os.Stdin, os.Stdout, os.Stderr, os.Args
 	defer func() {
@@ -64,12 +72,17 @@ func that(options ...testOption) error {
 		os.Args = args
 	}()
 
-	var cfg = settings{
-		output: GinkgoWriter,
-	}
-
+	var cfg = settings{}
 	for _, option := range options {
 		option(&cfg)
+	}
+
+	if cfg.ctx == nil {
+		cfg.ctx = context.Background()
+	}
+
+	if cfg.output == nil {
+		cfg.output = GinkgoWriter
 	}
 
 	r, w, err := os.Pipe()
@@ -78,7 +91,7 @@ func that(options ...testOption) error {
 	os.Stdout = w
 	os.Stderr = w
 	os.Args = append([]string{"retry"}, cfg.args...)
-	err = Execute()
+	err = Execute(cfg.ctx)
 
 	w.Close()
 
