@@ -38,9 +38,10 @@ func TestRetry(t *testing.T) {
 }
 
 type settings struct {
-	ctx    context.Context
-	output io.Writer
-	args   []string
+	ctx     context.Context
+	output  io.Writer
+	args    []string
+	envVars map[string]string
 }
 
 type testOption func(*settings)
@@ -48,6 +49,12 @@ type testOption func(*settings)
 func retry(args ...string) testOption {
 	return func(s *settings) {
 		s.args = args
+	}
+}
+
+func withEnvVar(key, val string) testOption {
+	return func(s *settings) {
+		s.envVars[key] = val
 	}
 }
 
@@ -63,6 +70,8 @@ func withContext(ctx context.Context) testOption {
 	}
 }
 
+var run = that
+
 func that(options ...testOption) error {
 	stdin, stdout, stderr, args := os.Stdin, os.Stdout, os.Stderr, os.Args
 	defer func() {
@@ -72,7 +81,7 @@ func that(options ...testOption) error {
 		os.Args = args
 	}()
 
-	var cfg = settings{}
+	var cfg = settings{envVars: map[string]string{}}
 	for _, option := range options {
 		option(&cfg)
 	}
@@ -83,6 +92,16 @@ func that(options ...testOption) error {
 
 	if cfg.output == nil {
 		cfg.output = GinkgoWriter
+	}
+
+	for key, val := range cfg.envVars {
+		current, hasEnvVar := os.LookupEnv(key)
+		os.Setenv(key, val)
+		if hasEnvVar {
+			defer os.Setenv(key, current)
+		} else {
+			defer os.Unsetenv(key)
+		}
 	}
 
 	r, w, err := os.Pipe()
