@@ -1,18 +1,28 @@
-Usage:
-  {{ .Name }} [{{ .Name }} flags] [--] command [command flags] [command arguments] [...]
+Tool to retry a command in case it fails.
 
-Flags:
-{{ .Flags }}
-  Note: {{ .Name }} uses a back-off style delay, this means that the
-        delay is slighly increased with each attempt.
+Usage:
+  {{ .Name }} command [command flags] [command arguments] [...]
+
+Note: {{ .Name }} uses a back-off style delay, this means that the
+      delay is slightly increased with each attempt.
+
+Environment Variables:
+  {{ printf "%-16s %s" .EnvVarAttempts "Number of attempts" }}
+  {{ printf "%-16s %s" .EnvVarDelay "Initial delay between attempts" }}
+  {{ printf "%-16s %s" .EnvVarBeQuiet "Disable output for failed attempts" }}
 
 Examples:
   Run curl command with default settings ({{ .Attempts }} attempts with an initial delay of {{ .Delay }}):
   $ {{ .Name }} curl wttr.in
 
   Specify the number of attempts (retries):
-  $ {{ .Name }} --attempts 5 -- some-command --flag
+  $ export {{ .EnvVarAttempts }}=5
+  $ {{ .Name }} some-command --flag
 
-  Use a custom initial delay:
-  $ {{ .Name }} --delay 100ms -- some-command
+  Use a custom initial delay of 125ms:
+  $ export {{ .EnvVarDelay }}=125ms
+  $ {{ .Name }} some-command
+
+Version:
+  {{ .Version }}
 

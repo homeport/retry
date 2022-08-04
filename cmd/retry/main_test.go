@@ -27,6 +27,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/homeport/retry/cmd/retry"
+
+	retrypkg "github.com/avast/retry-go/v4"
 )
 
 var _ = Describe("Retry tool", func() {
@@ -43,32 +47,86 @@ var _ = Describe("Retry tool", func() {
 			)).To(Succeed())
 		})
 
-		It("should print the version info", func() {
-			Expect(that(
-				retry("--version"),
-			)).To(BeNil())
-		})
-
 		It("should ignore unknown flags that are probably flags for the command to be retried", func() {
 			Expect(that(
 				retry("true", "--flag"),
-			)).To(BeNil())
+			)).To(Succeed())
+		})
+
+		It("should ignore if the double dash separator is used", func() {
+			Expect(that(
+				retry("--", "true"),
+			)).To(Succeed())
 		})
 
 		It("should fail after all attempts if the tool never return a non-zero exit code", func() {
 			Expect(that(
-				retry("--delay", "25ms", "--", "false"),
-				withOutput(GinkgoWriter),
-			)).ToNot(BeNil())
+				retry("false"),
+			)).ToNot(Succeed())
+		})
+
+		It("should parse the attempts override if used", func() {
+			err := run(
+				withEnvVar(RetryAttempts, "2"),
+				retry("false"),
+			)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(BeAssignableToTypeOf(retrypkg.Error{}))
+			Expect(err).To(HaveLen(2))
+		})
+
+		It("should fail with an error if parsing the attempts override does not work", func() {
+			err := run(
+				withEnvVar(RetryAttempts, "foobar"),
+				retry("true"),
+			)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("cannot parse"))
+		})
+
+		It("should parse the delay override if used", func() {
+			start := time.Now()
+			err := run(
+				withEnvVar(RetryDelay, "25ms"),
+				retry("false"),
+			)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(BeAssignableToTypeOf(retrypkg.Error{}))
+			Expect(time.Now()).Should(BeTemporally("<", start.Add(250*time.Millisecond)))
+		})
+
+		It("should fail with an error if parsing the delay override does not work", func() {
+			err := run(
+				withEnvVar(RetryDelay, "foobar"),
+				retry("true"),
+			)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("cannot parse"))
 		})
 
 		It("should not produce additional output if quiet flag is used", func() {
 			var buf bytes.Buffer
 			Expect(that(
-				retry("--quiet", "--delay", "25ms", "--", "false"),
+				withEnvVar(RetryDelay, "25ms"),
+				withEnvVar(RetryBeQuiet, "true"),
 				withOutput(&buf),
+				retry("false"),
 			)).ToNot(BeNil())
 			Expect(buf.Len()).To(BeZero())
+		})
+
+		It("should fail with an error if parsing the be quiet override does not work", func() {
+			err := run(
+				withEnvVar(RetryBeQuiet, "foobar"),
+				retry("true"),
+			)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("cannot parse"))
 		})
 
 		It("should cancel the execution if the context is canceled", func() {

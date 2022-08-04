@@ -30,34 +30,39 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
 	_ "embed"
 
 	"github.com/avast/retry-go/v4"
-	"github.com/spf13/pflag"
 	"golang.org/x/term"
 )
 
 // will be overwritten by build
 var version string = "HEAD"
 
+// environment variables to configure tool behavior
+const (
+	RetryAttempts = "RETRY_ATTEMPTS"
+	RetryDelay    = "RETRY_DELAY"
+	RetryBeQuiet  = "RETRY_BEQUIET"
+)
+
 //go:embed usage.tmpl
 var usageTemplate string
 
 type settings struct {
-	showVersion bool
-	quiet       bool
-	attempts    uint
-	delay       time.Duration
+	beQuiet  bool
+	attempts uint
+	delay    time.Duration
 }
 
 var defaults = settings{
-	showVersion: false,
-	quiet:       false,
-	attempts:    3,
-	delay:       2 * time.Second,
+	beQuiet:  false,
+	attempts: 3,
+	delay:    2 * time.Second,
 }
 
 var preferences settings
@@ -88,65 +93,106 @@ func executableName() string {
 	return result
 }
 
-func Execute(ctx context.Context) (err error) {
-	preferences = defaults
-
-	// Setup command line flag set that does not fail on unknown flags
-	// and with custom usage output based on file template
-	fs := pflag.NewFlagSet(os.Args[0], pflag.ContinueOnError)
-	fs.SortFlags = false
-	fs.ParseErrorsWhitelist = pflag.ParseErrorsWhitelist{UnknownFlags: true}
-	fs.Usage = func() {
-		tmpl, _ := template.New("usage").Parse(usageTemplate)
-		data := map[string]any{
-			"Name":     executableName(),
-			"Flags":    fs.FlagUsages(),
-			"Attempts": defaults.attempts,
-			"Delay":    defaults.delay,
-		}
-
-		_ = tmpl.Execute(os.Stdout, data)
+func usage() {
+	tmpl, _ := template.New("usage").Parse(usageTemplate)
+	data := map[string]any{
+		"Name":           executableName(),
+		"Version":        version,
+		"EnvVarAttempts": RetryAttempts,
+		"Attempts":       defaults.attempts,
+		"EnvVarDelay":    RetryDelay,
+		"Delay":          defaults.delay,
+		"EnvVarBeQuiet":  RetryBeQuiet,
+		"BeQuiet":        defaults.beQuiet,
 	}
 
-	// Command line flags
-	fs.UintVar(&preferences.attempts, "attempts", defaults.attempts, "Number of attempts")
-	fs.DurationVar(&preferences.delay, "delay", defaults.delay, "Initial delay between attempts")
-	fs.BoolVar(&preferences.quiet, "quiet", defaults.quiet, "Disable output for failed attempts")
-	fs.BoolVar(&preferences.showVersion, "version", defaults.showVersion, "Show tool version")
-	_ = fs.Parse(os.Args[1:])
+	_ = tmpl.Execute(os.Stderr, data)
+}
 
-	// Slice with all non-flag arguments (everything but the specified flags)
-	args := fs.Args()
+func lookupAttempts() (uint, error) {
+	if val, ok := os.LookupEnv(RetryAttempts); ok {
+		attempts, err := strconv.ParseUint(val, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("cannot parse %q as a number", val)
+		}
 
-	// Show version number and bail out if version flag was specified
-	if preferences.showVersion {
-		_, err = fmt.Printf("%s\n", version)
+		return uint(attempts), nil
+	}
+
+	return defaults.attempts, nil
+}
+
+func lookupDelay() (time.Duration, error) {
+	if val, ok := os.LookupEnv(RetryDelay); ok {
+		delay, err := time.ParseDuration(val)
+		if err != nil {
+			return 0, fmt.Errorf("cannot parse %q as time duration", val)
+		}
+
+		return delay, nil
+	}
+
+	return defaults.delay, nil
+}
+
+func lookupBeQuiet() (bool, error) {
+	if val, ok := os.LookupEnv(RetryBeQuiet); ok {
+		beQuiet, err := strconv.ParseBool(val)
+		if err != nil {
+			return false, fmt.Errorf("cannot parse %q as boolean", val)
+		}
+
+		return beQuiet, nil
+	}
+
+	return defaults.beQuiet, nil
+}
+
+func Execute(ctx context.Context) (err error) {
+	preferences.attempts, err = lookupAttempts()
+	if err != nil {
 		return err
+	}
+
+	preferences.delay, err = lookupDelay()
+	if err != nil {
+		return err
+	}
+
+	preferences.beQuiet, err = lookupBeQuiet()
+	if err != nil {
+		return err
+	}
+
+	var args []string
+	for i, arg := range os.Args {
+		switch {
+		case i == 0:
+			continue
+
+		case arg == "--":
+			continue
+
+		default:
+			args = append(args, arg)
+		}
 	}
 
 	// Back out if nothing was specified (only binary name)
 	if len(args) == 0 {
-		fs.Usage()
+		usage()
 		return fmt.Errorf("no command specified")
 	}
 
-	// In case data was piped into this process, create a temporary
-	// buffer to store the Stdin to have copies for each retry
-	var input []byte
-	if !term.IsTerminal(int(os.Stdin.Fd())) {
-		input, err = io.ReadAll(os.Stdin)
+	// In case data was piped into this process, mark that the input needs to
+	// be buffered internally so that it can be used multiple times
+	var buffer []byte
+	var bufferStdin bool
+	if bufferStdin = !term.IsTerminal(int(os.Stdin.Fd())); bufferStdin {
+		buffer, err = io.ReadAll(os.Stdin)
 		if err != nil {
 			return err
 		}
-	}
-
-	// Enable or disable output in case of an error and a retry, even with
-	// no quiet flag, there is no additional output if the command succeeds
-	var onRetry retry.OnRetryFunc
-	if preferences.quiet {
-		onRetry = func(_ uint, _ error) {}
-	} else {
-		onRetry = func(n uint, err error) { fmt.Fprintf(os.Stderr, "command failed at attempt #%d: %v\n", n+1, err) }
 	}
 
 	// Feed the command line arguments as-is into a command execution and
@@ -154,14 +200,23 @@ func Execute(ctx context.Context) (err error) {
 	var cmdName, cmdArgs = args[0], args[1:]
 	return retry.Do(
 		func() error {
+			var in io.Reader = os.Stdin
+			if bufferStdin {
+				in = bytes.NewReader(buffer)
+			}
+
 			command := exec.CommandContext(ctx, cmdName, cmdArgs...)
-			command.Stdin = bytes.NewReader(input)
+			command.Stdin = in
 			command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
 
 			return command.Run()
 		},
-		retry.OnRetry(onRetry),
+		retry.OnRetry(func(n uint, err error) {
+			if !preferences.beQuiet {
+				fmt.Fprintf(os.Stderr, "command failed at attempt #%d: %v\n", n+1, err)
+			}
+		}),
 		retry.Context(ctx),
 		retry.Attempts(preferences.attempts),
 		retry.Delay(preferences.delay),
