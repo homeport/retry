@@ -45,4 +45,4 @@ brews:
     license: "MIT"
     skip_upload: false
     test: |
-      system "#{bin}/retry --version"
+      system "#{bin}/retry true"
