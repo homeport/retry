@@ -1,0 +1,33 @@
+---
+name: Create Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        type: string
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - uses: actions/setup-go@v3
+      with:
+        go-version: 1.18.x
+
+    - name: Create release
+      uses: actions/create-release@v1
+      with:
+        release_name: "retry release ${{ github.event.inputs.version }}"
+        tag_name: ${{ github.event.inputs.version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
