@@ -7,9 +7,9 @@ Note: {{ .Name }} uses a back-off style delay, this means that the
       delay is slightly increased with each attempt.
 
 Environment Variables:
-  {{ printf "%-16s %s" .EnvVarAttempts "Number of attempts" }}
-  {{ printf "%-16s %s" .EnvVarDelay "Initial delay between attempts" }}
-  {{ printf "%-16s %s" .EnvVarBeQuiet "Disable output for failed attempts" }}
+  {{ printf "%-16s Number of attempts (default %d)" .EnvVarAttempts .Attempts }}
+  {{ printf "%-16s Initial delay between attempts (default %v)" .EnvVarDelay .Delay }}
+  {{ printf "%-16s Disable output for failed attempts (default %v)" .EnvVarBeQuiet .BeQuiet }}
 
 Examples:
   Run curl command with default settings ({{ .Attempts }} attempts with an initial delay of {{ .Delay }}):
