@@ -60,9 +60,9 @@ type settings struct {
 }
 
 var defaults = settings{
-	beQuiet:  false,
+	beQuiet:  true,
 	attempts: 3,
-	delay:    2 * time.Second,
+	delay:    30 * time.Second,
 }
 
 var preferences settings
