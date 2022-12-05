@@ -41,7 +41,7 @@ import (
 )
 
 // will be overwritten by build
-var version string = "HEAD"
+var version = "HEAD"
 
 // environment variables to configure tool behavior
 const (
