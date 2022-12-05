@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/github/license/homeport/retry.svg)](https://github.com/homeport/retry/blob/main/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/homeport/retry)](https://goreportcard.com/report/github.com/homeport/retry)
-[![Build](https://github.com/homeport/retry/workflows/Build/badge.svg)](https://github.com/homeport/retry/actions?query=workflow%3A%22Build%22)
+[![Tests](https://github.com/homeport/retry/workflows/Tests/badge.svg)](https://github.com/homeport/retry/actions?query=workflow%3A%22Tests%22)
 [![Codecov](https://img.shields.io/codecov/c/github/homeport/retry/main.svg)](https://codecov.io/gh/homeport/retry)
 [![Go Reference](https://pkg.go.dev/badge/github.com/homeport/retry.svg)](https://pkg.go.dev/github.com/homeport/retry)
 [![Release](https://img.shields.io/github/release/homeport/retry.svg)](https://github.com/homeport/retry/releases/latest)
@@ -39,7 +39,7 @@ curl --silent --location https://raw.githubusercontent.com/homeport/retry/main/h
 
 We are happy to have other people contributing to the project. If you decide to do that, here's how to:
 
-- get Go (`retry` requires Go version 1.18 or greater)
+- get Go (`retry` requires Go version 1.19 or greater)
 - fork the project
 - create a new branch
 - make your changes
