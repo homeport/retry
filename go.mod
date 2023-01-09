@@ -3,7 +3,7 @@ module github.com/homeport/retry
 go 1.19
 
 require (
-	github.com/avast/retry-go/v4 v4.3.1
+	github.com/avast/retry-go/v4 v4.3.2
 	github.com/onsi/ginkgo/v2 v2.6.1
 	github.com/onsi/gomega v1.24.2
 	golang.org/x/term v0.3.0
