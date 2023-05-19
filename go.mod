@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/avast/retry-go/v4 v4.3.4
 	github.com/onsi/ginkgo/v2 v2.9.5
-	github.com/onsi/gomega v1.27.6
+	github.com/onsi/gomega v1.27.7
 	golang.org/x/term v0.8.0
 )
 
