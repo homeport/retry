@@ -28,8 +28,8 @@ clean:
 
 .PHONY: test
 test:
-	export RETRY_DELAY="2s"
-	@ginkgo run \
+	@export RETRY_DELAY="2s"
+	go run -mod=mod github.com/onsi/ginkgo/v2/ginkgo run \
 	  --coverprofile=unit.coverprofile \
 	  --randomize-all \
 	  --randomize-suites \

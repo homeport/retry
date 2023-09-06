@@ -39,7 +39,7 @@ curl --silent --location https://raw.githubusercontent.com/homeport/retry/main/h
 
 We are happy to have other people contributing to the project. If you decide to do that, here's how to:
 
-- get Go (`retry` requires Go version 1.19 or greater)
+- get Go (`retry` requires Go version 1.20 or greater)
 - fork the project
 - create a new branch
 - make your changes
