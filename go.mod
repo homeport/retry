@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/avast/retry-go/v4 v4.5.0
 	github.com/onsi/ginkgo/v2 v2.13.0
-	github.com/onsi/gomega v1.29.0
+	github.com/onsi/gomega v1.30.0
 	golang.org/x/term v0.13.0
 )
 
