@@ -15,11 +15,6 @@ builds:
     - -s -w -extldflags "-static" -X main.version={{.Version}}
     mod_timestamp: '{{ .CommitTimestamp }}'
 
-archives:
-- replacements:
-    darwin: darwin
-    linux: linux
-
 checksum:
   name_template: 'checksums.txt'
 
@@ -39,7 +34,7 @@ brews:
     commit_author:
       name: GoReleaser Bot
       email: goreleaser@carlosbecker.com
-    folder: HomebrewFormula
+    directory: HomebrewFormula
     homepage: "https://github.com/homeport/retry"
     description: "Tool to retry a command in case it fails"
     license: "MIT"
