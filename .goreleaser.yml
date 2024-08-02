@@ -1,19 +1,21 @@
 ---
+version: 2
+
 builds:
-  - env:
-    - CGO_ENABLED=0
-    goos:
-    - linux
-    - darwin
-    goarch:
-    - amd64
-    - arm64
-    main: ./cmd/retry/main.go
-    flags:
-    - -trimpath
-    ldflags:
-    - -s -w -extldflags "-static" -X main.version={{.Version}}
-    mod_timestamp: '{{ .CommitTimestamp }}'
+- env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm64
+  main: ./cmd/retry/main.go
+  flags:
+  - -trimpath
+  ldflags:
+  - -s -w -extldflags "-static" -X main.version={{.Version}}
+  mod_timestamp: '{{ .CommitTimestamp }}'
 
 checksum:
   name_template: 'checksums.txt'
@@ -24,20 +26,28 @@ snapshot:
 release:
   name_template: "{{.ProjectName}} release v{{.Version}}"
 
+changelog:
+  disable: false
+  use: github
+  filters:
+    exclude:
+    - "Merge pull request"
+    - "dependabot"
+
 brews:
-  - repository:
-      owner: homeport
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    url_template: "https://github.com/homeport/retry/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    download_strategy: CurlDownloadStrategy
-    commit_author:
-      name: GoReleaser Bot
-      email: goreleaser@carlosbecker.com
-    directory: HomebrewFormula
-    homepage: "https://github.com/homeport/retry"
-    description: "Tool to retry a command in case it fails"
-    license: "MIT"
-    skip_upload: false
-    test: |
-      system "#{bin}/retry true"
+- repository:
+    owner: homeport
+    name: homebrew-tap
+    token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+  url_template: "https://github.com/homeport/retry/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+  download_strategy: CurlDownloadStrategy
+  commit_author:
+    name: GoReleaser Bot
+    email: goreleaser@carlosbecker.com
+  directory: HomebrewFormula
+  homepage: "https://github.com/homeport/retry"
+  description: "Tool to retry a command in case it fails"
+  license: "MIT"
+  skip_upload: false
+  test: |
+    system "#{bin}/retry true"
