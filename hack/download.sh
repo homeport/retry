@@ -22,8 +22,8 @@
 
 set -euo pipefail
 
-ORG=homeport
-REPO=retry
+ORG="${ORG:-homeport}"
+REPO="${REPO:-retry}"
 
 if ! hash curl 2>/dev/null; then
   echo "Required tool curl is not installed."
