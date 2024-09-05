@@ -6,7 +6,7 @@ require (
 	github.com/avast/retry-go/v4 v4.6.0
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.1
-	golang.org/x/term v0.23.0
+	golang.org/x/term v0.24.0
 )
 
 require (
