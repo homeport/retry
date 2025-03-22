@@ -1,6 +1,6 @@
 module github.com/homeport/retry
 
-go 1.22.10
+go 1.23.0
 
 require (
 	github.com/avast/retry-go/v4 v4.6.0
