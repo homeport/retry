@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/onsi/ginkgo/v2 v2.32.0
-	github.com/onsi/gomega v1.42.0
+	github.com/onsi/gomega v1.42.1
 	golang.org/x/term v0.44.0
 )
 
